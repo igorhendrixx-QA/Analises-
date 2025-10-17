@@ -1,16 +1,3 @@
-SELECT
-    count(*),
-    lote,
-    filial,
-    plaqueta
-FROM
-    itens_controle_equipamento_operacional
-GROUP BY
-    lote,
-    filial,
-    plaqueta
-HAVING
-    count(*) > 0;
 
 
 
@@ -212,6 +199,7 @@ WHERE
 ORDER BY
     dud.dud_filori,
     dud.dud_viagem;
+
 
 
 
