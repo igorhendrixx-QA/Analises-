@@ -1,0 +1,218 @@
+SELECT
+    count(*),
+    lote,
+    filial,
+    plaqueta
+FROM
+    itens_controle_equipamento_operacional
+GROUP BY
+    lote,
+    filial,
+    plaqueta
+HAVING
+    count(*) > 0;
+
+
+
+
+
+
+
+SELECT DISTINCT
+    app.fildoc,
+    app.doc,
+    sa1.a1_nome           AS nome,
+    app.serie             AS tipo,
+    app.data_oco          AS data,
+    app.hora_oco,
+    app.ocorrencia        AS cod_ocorr,
+    dt2.dt2_descri        AS desc_ocorr,
+    app.nome_recebedor    AS recebedor,
+    app.doc_recebedor,
+    app.hora_checkin,
+    app.hora_checkout,
+    app.latlon_checkout,
+    app.latlon_assinatura,
+    app.latlon_cliente,
+    (
+        CASE
+            WHEN DT6.DT6_SERIE in ('1','A','A3','MNT')
+            AND DT6.DT6_SQEDES<>' '
+            THEN DUL.DUL_end
+                || DUL.DUL_bairro
+                || DUL.DUL_mun
+                || DUL.DUL_est
+            WHEN DT6.DT6_SERIE='COL' 
+            THEN   due.due_end
+                || due.due_bairro
+                || due.due_mun
+                || due.due_est
+            ELSE
+            sa1.a1_end
+                || sa1.a1_bairro
+                || sa1.a1_mun
+                || sa1.a1_est
+
+
+
+        END
+    ) AS endereço_coleta,
+    app.distancia         AS distancia_do_cliente,
+    dud.dud_filori        AS filial,
+    dud.dud_viagem        AS viagem,
+    dtq.dtq_veic          AS veiculo
+FROM
+         app_motorista app
+    full JOIN dud010  dud ON app.doc = dud.dud_doc
+                             AND app.fildoc = dud.dud_fildoc
+                             AND app.serie = dud.dud_serie
+    INNER JOIN dtq010  dtq ON dtq.dtq_viagem = dud.dud_viagem
+                             AND dtq.dtq_filori = dud.dud_filori
+    INNER JOIN dt2010  dt2 ON app.ocorrencia = dt2.dt2_codoco
+    INNER JOIN dt6010  dt6 ON dt6.dt6_doc = dud.dud_doc
+                             AND dt6.dt6_fildoc = dud.dud_fildoc
+                             AND dt6.dt6_serie = dud.dud_serie
+    INNER JOIN sa1010  sa1 ON sa1.a1_cod = dt6.dt6_clides
+                             AND sa1.a1_loja = dt6.dt6_lojdes
+    FULL JOIN dul010  dul ON dt6.dt6_sqedes = dul.dul_seqend
+                            AND dt6.dt6_clides = dul.dul_codcli
+                            AND dt6.dt6_lojdes = dul.dul_lojcli
+   full JOIN DT5010 DT5 ON   dt5.dt5_doc = app.doc
+                             AND dt5.dt5_fildoc = app.fildoc 
+                             AND dt5.dt5_serie = app.serie
+                             full JOIN  DUE010 DUE ON due.due_cgc=dt5.dt5_cgcsol
+WHERE
+        app.data_oco = '20220802'
+    AND app.data_oco = dtq.dtq_datini
+    AND dud.dud_datcad BETWEEN '20220701' AND '20220802'
+    AND dud.dud_filori IN (
+        '29',
+        '02',
+        '06',
+        '07'
+    )
+    AND dud.dud_sertms <> '2'
+    AND dud.dud_filial = ' '
+    AND dt6.dt6_filial = ' '
+    AND sa1.a1_filial = ' '
+ORDER BY
+    dud.dud_filori,
+    dud.dud_viagem;	
+
+
+
+
+
+// SO ESTA TRAZENDO COLETAS//
+
+
+SELECT DISTINCT
+    dud.dud_fildoc,
+    dud.dud_doc,
+    dud.dud_serie,
+    (
+        CASE
+            WHEN dud.dud_serie IN (
+                '1',
+                'A',
+                'A3',
+                'MNT'
+            ) THEN
+                Sa1.a1_nome
+            ELSE
+                due.due_nome
+        END
+    ) AS nome_cliente,
+    app.data_oco          AS data,
+    app.hora_oco,
+    app.ocorrencia        AS cod_ocorr,
+    dt2.dt2_descri        AS desc_ocorr,
+    app.nome_recebedor    AS recebedor,
+    app.doc_recebedor,
+    app.hora_checkin,
+    app.hora_checkout,
+    app.latlon_checkout,
+    app.latlon_assinatura,
+    app.latlon_cliente,(
+        CASE
+            WHEN dud.dud_serie IN(
+                '1', 'A', 'A3', 'MNT'
+            )
+                 AND dt6.dt6_sqedes <> ' ' THEN
+                dul.dul_end
+                || dul.dul_bairro
+                || dul.dul_mun
+                || dul.dul_est
+            WHEN dud.dud_serie IN(
+                '1', 'A',
+                'A3', 'MNT'
+            )
+                 AND dt6.dt6_sqedes = ' ' THEN
+                sa1.a1_end
+                || sa1.a1_bairro
+                || sa1.a1_mun
+                || sa1.a1_est
+            WHEN dud.dud_serie = 'COL'
+                 AND dt5.dt5_seqend = ' ' THEN
+                due.due_end
+                || due.due_bairro
+                || due.due_mun
+                || due.due_est
+            ELSE
+                dul.dul_end
+                || dul.dul_bairro
+                || dul.dul_mun
+                || dul.dul_est
+        END
+    ) AS endereço,
+    app.distancia         AS distancia_do_cliente,
+    dud.dud_filori        AS filial,
+    dud.dud_viagem        AS viagem,
+    dtq.dtq_veic          AS veiculo
+FROM
+    dud010         dud
+     INNER JOIN app_motorista  app ON dud.dud_doc = app.doc
+                                   AND dud.dud_fildoc = app.fildoc
+                                   AND dud.dud_serie = app.serie
+   INNER JOIN dt6010         dt6 ON app.doc = dt6.dt6_doc
+                            AND app.fildoc = dt6_fildoc
+                            AND app.serie = dt6_serie
+    INNER JOIN dt5010         dt5 ON app.doc = dt5.dt5_doc
+                            AND app.fildoc = DT5.dt5_fildoc
+                            AND app.serie = DT5.dt5_serie
+    INNER JOIN sa1010         Sa1 ON dt6.dt6_cliDES= Sa1.a1_cod
+                           AND dt6.dt6_lojDES = Sa1.a1_loja
+   INNER JOIN due010         due ON dt5.dt5_cgcsol = due.due_cgc
+    INNER JOIN dul010         dul ON dt6.dt6_sqedes = dul.dul_seqend
+                            AND dt5.dt5_seqend = dul.dul_seqend
+  INNER JOIN dtq010         dtq ON dtq.dtq_filori = dud.dud_filori
+                            AND dtq.dtq_viagem = dud.dud_viagem
+   INNER JOIN dt2010 DT2 ON app.ocorrencia = dt2.dt2_codoco
+WHERE
+    dud.dud_filori IN (
+        '29',
+        '02',
+        '06',
+        '07'
+    )
+    AND dud.dud_datcad BETWEEN '20220701' AND '20220802'
+    AND dud.dud_sertms <> '2'
+    AND dud.dud_filial = ' '
+    AND app.data_oco = '20220802'
+    AND app.data_oco = dtq.dtq_datini
+    --AND dtq.dtq_datini = '20220802'
+    AND dt6.dt6_filial = ' '
+    AND sa1.a1_filial = ' '
+    AND dt5.dt5_filial = ' '
+    AND dtq.dtq_filial = ' '
+    AND due.due_filial = ' '
+    AND dT6.dT6_filial = ' '
+    AND dt2.dt2_filial = ' '
+    AND DUL.DUL_FILIAL=' '
+ORDER BY
+    dud.dud_filori,
+    dud.dud_viagem;
+
+
+
+
